@@ -8,7 +8,7 @@
 
 ## 使用
 
-1. 下载并解压安装包，或下载本仓库源码。
+1. 下载 [v0.5.0 安装包](https://github.com/BB-TE/LeafRead/releases/download/v0.5.0/LeafRead-v0.5.0.zip) 并解压，也可以下载本仓库源码。
 2. 在 Chrome 地址栏打开 `chrome://extensions`，开启「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择其中的 **extension 文件夹**。无需安装 Node.js 或启动服务器。
 4. 刷新已打开的英文文章，鼠标停在单词上约 1 秒即可查词。
