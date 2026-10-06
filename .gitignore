@@ -1,0 +1,16 @@
+/node_modules/
+/dist/
+/*.zip
+/*.png
+/*.epub
+# Local reader prototype retained on this computer; excluded from the first public release.
+/extension/reader.*
+/extension/sample.js
+/extension/vendor/
+/tests/reader.test.cjs
+/tests/make-demo.cjs
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db

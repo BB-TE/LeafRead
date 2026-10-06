@@ -1,0 +1,25 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LeafRead · 网页查词</title><link rel="stylesheet" href="popup.css"><script defer src="shared.js"></script><script defer src="popup.js"></script></head><body>
+<header><strong>❧ LeafRead</strong><span>读到哪里，查到哪里</span></header>
+<section class="dictionary" aria-label="单词查询">
+  <form id="searchForm" novalidate>
+    <label for="searchWord">查一个单词</label>
+    <div class="search-row"><input id="searchWord" type="text" placeholder="输入英文单词，如 serendipity" maxlength="120" autocomplete="off" spellcheck="false" autocapitalize="none" autofocus aria-describedby="searchStatus"><button id="searchButton" type="submit">查词</button></div>
+  </form>
+  <p id="searchStatus" class="search-status" role="status" aria-live="polite">输入单词，按回车即可查询。</p>
+  <article id="searchResult" class="search-result" aria-label="查询结果" aria-busy="false" hidden>
+    <div class="word-heading"><h1 id="resultWord"></h1><span id="pronunciation"></span></div>
+    <p id="definition"></p><p id="dictionarySource"></p>
+    <div class="result-actions"><button id="speakWord" type="button">听发音</button><button id="saveWord" type="button">收藏单词</button></div>
+  </article>
+</section>
+<details class="settings"><summary>网页悬浮查词设置</summary>
+<label class="switch"><span>网页悬浮查词</span><input id="enabled" type="checkbox"></label>
+<p id="pageStatus" role="status">正在检查当前网页……</p>
+<label class="switch"><span>在当前网站启用</span><input id="siteEnabled" type="checkbox"></label>
+<label class="range">悬浮等待 <output id="delayValue">1 秒</output><input id="delay" type="range" min="0.4" max="3" step="0.1"></label>
+<label class="check"><input id="alt" type="checkbox"> 按住 Alt 才查词</label>
+<label class="check"><input id="online" type="checkbox"> 开启在线查词</label>
+</details>
+<div class="actions"><button id="vocab">查看生词本 ↗</button></div>
+<p class="note">直接读取鼠标下的文字，无需导入文章。在线查询只发送目标词或选中的短语。</p>
+</body></html>
