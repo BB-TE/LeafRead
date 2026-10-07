@@ -40,7 +40,7 @@ async function status(){
   if(!siteHost){el('pageStatus').textContent='当前页面暂不支持网页查词。请打开普通英文文章或文字形式的在线书籍。';return;}
   if(!settings.webEnabled){el('pageStatus').textContent='网页查词已暂停。打开上面的开关即可恢复。';return;}
   if(settings.disabledHosts.includes(siteHost)){el('pageStatus').textContent='已在 '+siteHost+' 暂停查词。';return;}
-  try{const response=await chrome.tabs.sendMessage(currentTab.id,{type:'leaf:ping'});el('pageStatus').textContent=response?.version==='0.5.0'?'已开启 · '+siteHost+'\n鼠标停在英文单词上即可查看释义。':'请刷新文章页面，启用新版网页查词。';}
+  try{const response=await chrome.tabs.sendMessage(currentTab.id,{type:'leaf:ping'});el('pageStatus').textContent=response?.version==='0.6.0'?'已开启 · '+siteHost+'\n鼠标停在英文单词上即可查看释义。':'请刷新文章页面，启用新版网页查词。';}
   catch{el('pageStatus').textContent='请刷新文章页面。Chrome 内置页面、内置 PDF 阅读器和图片文字暂不支持。';}
 }
 async function update(patch){try{settings=await send('leaf:settings-set',{patch});render();await status();}catch(e){el('pageStatus').textContent=e.message;}}

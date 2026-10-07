@@ -27,7 +27,7 @@
       case 'leaf:save':data=await service.save(message.entry);break;
       default:throw new Error('预览暂不支持此操作。');
     }return {ok:true,data};}catch(error){return {ok:false,error:error.message};}}},
-    tabs:{async query(){return [{id:1,url:'https://example.com/article'}];},async sendMessage(){return {version:'0.5.0'};},async create({url}){window.open(url,'_blank');}},
+    tabs:{async query(){return [{id:1,url:'https://example.com/article'}];},async sendMessage(){return {version:'0.6.0'};},async create({url}){window.open(url,'_blank');}},
     storage:{onChanged:{addListener(fn){changes.push(fn);}}}
   };
   const note=document.querySelector('.note');note.textContent='弹窗交互预览。预览数据与正式扩展分开保存；正式使用请在 Chrome 加载扩展。';

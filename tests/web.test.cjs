@@ -81,3 +81,59 @@ test('shared messaging translates synchronous invalidation while preserving real
   await assert.rejects(w.LeafShared.sendExtension({type:'leaf:lookup'},'popup'),/关闭这个面板/);
   w.chrome.runtime.sendMessage=async()=>({ok:false,error:'在线词典暂时不可用'});await assert.rejects(w.LeafShared.sendExtension({type:'leaf:lookup'}),/在线词典暂时不可用/);dom.window.close();
 });
+
+test('dictionary rejection falls back to a clearly labeled translation without forwarding context',async()=>{
+  const requests=[];const service=global.LeafShared.createService(storage(),async(url,options)=>{
+    requests.push({url,options});return new URL(url).hostname==='dict.youdao.com'?{ok:false,status:403}:{ok:true,status:200,json:async()=>({responseStatus:200,quotaFinished:'false',responseData:{translatedText:'偶然发现'}})};
+  });
+  const result=await service.lookup('serendipity');assert.match(result.source,/参考翻译.*主词典/);assert.equal(result.pronunciation,'');assert.equal(requests.length,2);
+  assert.equal(new URL(requests[1].url).searchParams.get('q'),'serendipity');assert.equal(requests[1].options.credentials,'omit');assert.equal(requests[1].options.referrerPolicy,'no-referrer');
+});
+
+test('sentence translation normalizes selection whitespace and preserves case in cached queries',async()=>{
+  const requests=[];const service=global.LeafShared.createService(storage(),async(url)=>{requests.push(new URL(url).searchParams.get('q'));return {ok:true,json:async()=>({responseStatus:200,quotaFinished:false,responseData:{translatedText:'完整的句子译文'}})};});
+  const sentence='After a difficult week, she decided to take a short break and read a book before returning to the station to begin another long journey.';
+  assert.ok(sentence.length>120);await service.lookup(sentence.replace('a short','a\n  short'));assert.deepEqual(requests,[sentence]);await service.lookup(sentence);assert.equal(requests.length,1);
+  await service.lookup(sentence.toUpperCase());assert.equal(requests.length,2);
+});
+
+test('long translations respect each UTF-8 segment limit and never cache a partial failure',async()=>{
+  const text=('A gentle breeze moved through the trees — and everyone felt calm. ').repeat(13).trim();
+  const chunks=global.LeafShared.translationChunks(text);assert.ok(chunks.length>1);assert.equal(chunks.join(' '),text);chunks.forEach(chunk=>assert.ok(Buffer.byteLength(chunk,'utf8')<=500));
+  const backing=storage();let calls=0;const service=global.LeafShared.createService(backing,async(url)=>{calls++;assert.ok(Buffer.byteLength(new URL(url).searchParams.get('q'),'utf8')<=500);return calls===2?{ok:false,status:429}:{ok:true,json:async()=>({responseStatus:200,responseData:{translatedText:'微风吹过树林。'}})};});
+  await assert.rejects(service.lookup(text),/请求过多|额度/);assert.equal((await backing.get(['leafCache'])).leafCache,undefined);
+  const result=await service.lookup(text);assert.match(result.source,/分段/);assert.equal(result.text.split('微风吹过树林。').length-1,chunks.length);
+  const completedCalls=calls;await service.lookup(text);assert.equal(calls,completedCalls);
+});
+
+test('quota, malformed responses and connection failures are explained and can recover on retry',async()=>{
+  const sentence='This is a sentence to translate.';
+  for(const data of [{responseStatus:429,responseDetails:'quota'},{responseStatus:200,quotaFinished:true,responseData:{translatedText:'DAILY LIMIT'}},{responseStatus:500,responseData:{translatedText:'bad'}}]){
+    await assert.rejects(global.LeafShared.query(sentence,async()=>({ok:true,json:async()=>data})),/额度|有效译文/);
+  }
+  let fail=true;const service=global.LeafShared.createService(storage(),async()=>{if(fail)throw new TypeError('Failed to fetch');return {ok:true,json:async()=>({responseStatus:200,responseData:{translatedText:'这是一个句子。'}})};});
+  await assert.rejects(service.lookup(sentence),/检查网络或代理/);fail=false;assert.equal((await service.lookup(sentence)).text,'这是一个句子。');
+  assert.throws(()=>global.LeafShared.validateText(('a ').repeat(800)),/1500/);
+});
+
+test('hover offers sentence translation and retry keeps the same source text',async()=>{
+  let failSentence=true;const {dom,w,requests}=await contentWindow(message=>({ok:message.text==='exhausted'||!failSentence,data:{text:'她感到筋疲力尽。',source:'test'},error:'免费额度已用完'}));
+  w.document.querySelector('p').dispatchEvent(new w.MouseEvent('pointermove',{bubbles:true,clientX:40,clientY:20}));await pause(460);
+  const root=w.document.getElementById('leafread-web-tooltip').shadowRoot;const sentenceButton=[...root.querySelectorAll('button')].find(x=>x.textContent==='翻译整句');assert.equal(sentenceButton.hidden,false);sentenceButton.click();await pause(20);
+  assert.equal(root.querySelector('strong').textContent,'整句翻译');assert.equal(root.querySelector('.original').textContent,'After a difficult week, she felt exhausted.');assert.match(root.querySelector('.result').textContent,/额度/);
+  const retry=[...root.querySelectorAll('button')].find(x=>x.textContent==='重试');assert.equal(retry.hidden,false);failSentence=false;retry.click();await pause(20);
+  assert.equal(root.querySelector('.result').textContent,'她感到筋疲力尽。');assert.equal(retry.hidden,true);assert.equal(requests.filter(m=>m.type==='leaf:lookup').at(-1).text,'After a difficult week, she felt exhausted.');dom.window.close();
+});
+
+test('mouse and keyboard selections translate more than 120 characters and oversized selections show a hint',async()=>{
+  for(const keyboard of [false,true]){
+    const {dom,w,requests}=await contentWindow();const p=w.document.querySelector('p');p.textContent='This English sentence is deliberately longer than the old selection limit, so readers can translate the complete sentence without cutting it into smaller pieces.';
+    if(!keyboard)p.dispatchEvent(new w.MouseEvent('pointerdown',{bubbles:true,button:0}));
+    const range=w.document.createRange();range.selectNodeContents(p);const selection=w.getSelection();selection.removeAllRanges();selection.addRange(range);
+    if(keyboard)w.document.dispatchEvent(new w.KeyboardEvent('keyup',{key:'Shift'}));else p.dispatchEvent(new w.MouseEvent('pointerup',{bubbles:true,button:0}));await pause(130);
+    assert.equal(requests.find(m=>m.type==='leaf:lookup').text,p.textContent);assert.equal(w.document.getElementById('leafread-web-tooltip').shadowRoot.querySelector('strong').textContent,'整句翻译');dom.window.close();
+  }
+  const {dom,w}=await contentWindow(message=>{try{w.LeafShared.validateText(message.text);return {ok:true,data:{text:'test'}};}catch(error){return {ok:false,error:error.message};}});
+  const p=w.document.querySelector('p');p.textContent=('English text ').repeat(130);const range=w.document.createRange();range.selectNodeContents(p);w.getSelection().addRange(range);w.document.dispatchEvent(new w.KeyboardEvent('keyup',{key:'Shift'}));await pause(130);
+  assert.match(w.document.getElementById('leafread-web-tooltip').shadowRoot.querySelector('.result').textContent,/1500/);dom.window.close();
+});

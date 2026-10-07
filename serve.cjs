@@ -16,7 +16,7 @@ http.createServer(async(req,res)=>{
   }
   if(relative==='/api/dictionary'||relative==='/api/phrase'){
     const query=new URL(req.url,'http://localhost').searchParams.get('q')||'';
-    if(req.method!=='GET'||!query.trim()||query.length>120){res.writeHead(400);res.end();return;}
+    if(req.method!=='GET'||!query.trim()||query.length>1500){res.writeHead(400);res.end();return;}
     // Local preview only. Destination is fixed; this is not a general-purpose proxy.
     const target=relative==='/api/dictionary'?'https://dict.youdao.com/jsonapi?q='+encodeURIComponent(query):'https://api.mymemory.translated.net/get?q='+encodeURIComponent(query)+'&langpair=en%7Czh-CN';
     try{const upstream=await fetch(target,{signal:AbortSignal.timeout(10000)});const data=await upstream.json();res.writeHead(upstream.status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));}

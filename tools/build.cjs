@@ -7,7 +7,7 @@ const production=[
   'vocabulary.html','vocabulary.css','vocabulary.js',
   'web-text.js','web-content.js','web-content.css'
 ];
-const docs=['README.md','LICENSE','PRIVACY.md','CHANGELOG.md','docs/images/popup.png','docs/images/vocabulary.png'];
+const docs=['README.md','LICENSE','PRIVACY.md','CHANGELOG.md','docs/images/popup.png','docs/images/vocabulary.png','docs/images/sentence.png'];
 const development=['.gitignore','package.json','package-lock.json','serve.cjs','tools/build.cjs',
   'tests/web.test.cjs','tests/popup.test.cjs','tests/vocabulary.test.cjs','tests/popup-preview.js',
   'extension/web-demo.html','extension/web-demo-frame.html'];

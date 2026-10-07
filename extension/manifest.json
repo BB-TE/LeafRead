@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LeafRead · 网页查词",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "minimum_chrome_version": "120",
   "description": "读英文时悬浮查词，也可以输入单词查询；收藏单词及原句到本地生词本。",
   "action": { "default_title": "LeafRead · 网页悬浮查词", "default_popup": "popup.html" },
